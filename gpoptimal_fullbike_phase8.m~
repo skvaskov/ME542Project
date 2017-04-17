@@ -1,5 +1,5 @@
 %get to a final point in the minimum time possible obeying path constraints
-%for unicycle model and only 1 phase now
+%for unicycle model and only 1 phase now this is for the long straightaway
 
 %-------------------------------------------------------------------------%
 %                          Initial Setup                                  %
@@ -7,20 +7,15 @@
 close all
 clear all
 clc
-
-%get initial condition and time from previous phase
-load('openloopcontrolbuff.mat')
-x0=gpops_states2(end,:);
-t0=gpops_t2(end);
-clearvars -except x0 t0
-%
 load('F1CarData.mat')
 load('CircuitOfAmerica.mat')
+
 %specify start and end index of phase
-start=36;
-fin=45;
+start=292;
+fin=362;
 %very conservative guess for final time
-T=t0+(Track.arc_s(fin)-Track.arc_s(start))/10+25;
+t0=0;
+T=(Track.arc_s(fin)-Track.arc_s(start))/10+60;
 t=linspace(t0,T,1000);
 dt=t(2)-t(1);
 xc0=[Track.cline(1:2,start);Track.theta(start)]; %initial centerline point
@@ -37,38 +32,34 @@ bounds.phase(iphase).initialtime.lower = t0;
 bounds.phase(iphase).initialtime.upper = t0;
 bounds.phase(iphase).finaltime.lower = 0;
 bounds.phase(iphase).finaltime.upper = T;
-bounds.phase(iphase).initialstate.lower = x0;
-bounds.phase(iphase).initialstate.upper = x0;
-bounds.phase(iphase).state.lower = [-400 -300 -pi 0 -.5]; 
-bounds.phase(iphase).state.upper = [1600 1000 pi 150 .5]; 
-bounds.phase(iphase).finalstate.lower =  [-400 -300 -pi 0 -.5];
-bounds.phase(iphase).finalstate.upper = [1600 1000 pi 150 .5]; 
+bounds.phase(iphase).initialstate.lower = [xc0' sqrt(5500/param(5)) 0];
+bounds.phase(iphase).initialstate.upper = [xc0' sqrt(5500/param(5)) 0];
+ bounds.phase(iphase).state.lower = [-400 -300 -pi 0 -.5]; 
+ bounds.phase(iphase).state.upper = [1600 1000 pi 150 .5]; 
+ bounds.phase(iphase).finalstate.lower =  [-400 -300 -pi 0 -.5];
+ bounds.phase(iphase).finalstate.upper = [1600 1000 pi 40 .5]; 
 
-bounds.phase(iphase).control.lower = [-10000 -.25];
-bounds.phase(iphase).control.upper = [5500 .25];
+bounds.phase(iphase).control.lower = [-10000 -.025];
+bounds.phase(iphase).control.upper = [5500 .025];
 %cost
   bounds.phase(iphase).integral.lower=0;
   bounds.phase(iphase).integral.upper=10000;
 %path constraints
-bounds.phase(iphase).path.lower=[0 0 2500 -2500];
-bounds.phase(iphase).path.upper=[1e6 1e6 2500 2500];
+bounds.phase(iphase).path.lower=[-1e6 0 -2500 -2500];
+bounds.phase(iphase).path.upper=[0 1e6 2500 2500];
 %terminate trajectory at cross of "finish line"
-bounds.eventgroup(iphase).lower=0;
-bounds.eventgroup(iphase).upper=1e6;
+bounds.eventgroup(iphase).lower=-1e6;
+bounds.eventgroup(iphase).upper=0;
 
 %-------------------------------------------------------------------------%
 %                          Initial Guess                                  %
 %-------------------------------------------------------------------------%
- guess.phase(iphase).time     = [ t0; T ];
-guess.phase(iphase).state    = [ x0; xcF' 0 0];
-% guess.phase(iphase).time=linspace(t0,T,fin-start+1)';
-% clinestates=[Track.cline(1:2,start:fin);Track.theta(start:fin);...
-%     10*ones(1,fin-start+1);zeros(1,fin-start+1)];
-% guess.phase(iphase).state=[x0;clinestates(:,2:end)'];
-% contr=[1000*ones(fin-start+1,1) zeros(fin-start+1,1)];
-% guess.phase(iphase).control  = contr;
-guess.phase(iphase).control = [5000 0;0 0];
-guess.phase(iphase).integral = 1000;
+guess.phase(iphase).time     = [ t0; T ];
+guess.phase(iphase).state    = [ xc0' sqrt(5500/param(5)) 0; xcF' 0 0];
+
+
+guess.phase(iphase).control  = [5000,0;0,0 ];
+guess.phase(iphase).integral = 0;
 
 %-------------------------------------------------------------------------%
 %----------Provide Mesh Refinement Method and Initial Mesh ---------------%
@@ -92,7 +83,7 @@ setup.nlp.solver                     = 'ipopt';
 setup.nlp.snoptoptions.tolerance     = 1e-4;
 setup.nlp.snoptoptions.maxiterations = 20000;
 setup.nlp.ipoptoptions.linear_solver = 'ma57';
-setup.nlp.ipoptoptions.tolerance     = 1e-2;
+setup.nlp.ipoptoptions.tolerance     = 1e-4;
 % setup.derivatives.supplier           = 'adigator';
 % setup.derivatives.derivativelevel    = 'second';
 setup.method                         = 'RPM-Differentiation';
@@ -165,11 +156,11 @@ for i=1:length(t)
     Ftire(i,:)=tireforce(P{:},X{:},U{:});
 end
 phaseout.dynamics=dx;
-left=0.00584113818737157*x1(:,1).^2+0.000715776610793797*x1(:,2).^2+0.00410085041108458*x1(:,1).*x1(:,2)-2.0486203451185*x1(:,1)-0.733114404223798*x1(:,2)+167.248959747038;
-right=-0.00387663805047578*x1(:,1).^2-0.00150289791070212*x1(:,2).^2-0.00547027011226241*x1(:,1).*x1(:,2)+1.06576225836893*x1(:,1)+1.00011236472944*x1(:,2)-39.2651317560038;
-
-%phaseout.integrand=sqrt((x1(:,1)-ones(size(x1(:,1)))*xcF(1)).^2+(x1(:,2)-ones(size(x1(:,2)))*xcF(2)).^2);
-
+%left=-.1990*x-.02554*y-.1355;
+%right=.1722*x+.2188*y+4.1726;
+right=x1(:,2)-144.503901491793+0.788349918916939*(x1(:,1)+207.011572367274);
+left=x1(:,2)-109.677627119228+0.782251827221814*(x1(:,1)+138.588713481620);
+phaseout.integrand=sqrt((x1(:,1)-ones(size(x1(:,1)))*xcF(1)).^2+(x1(:,2)-ones(size(x1(:,2)))*xcF(2)).^2+(x1(:,3)-ones(size(x1(:,3)))*xcF(3)).^2);
 phaseout.path=[left right Ftire];
 end
 
@@ -178,12 +169,11 @@ Xf=input.phase(1).finalstate;
 T=input.phase(1).finaltime;
 xbl=input.auxdata.xblF;
 xbr=input.auxdata.xbrF;
-xcF=input.auxdata.xcF;
 %end of phase 1 is determined by the crossing the line between the two
 %boundary points
 output.eventgroup(1).event=Xf(2)-xbr(2)-(xbl(2)-xbr(2))/(xbl(1)-xbr(1))*(Xf(1)-xbr(1));
 % objective is to minimize final time
 %compute total distance away from endpoint
 
-output.objective=input.phase(1).integral+1000*T+100*(Xf(3)-xcF(3))^2;
+output.objective=input.phase(1).integral+T;
 end

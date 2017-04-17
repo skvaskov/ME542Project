@@ -20,9 +20,9 @@ load('openloopcontrolbuff.mat');
 s_start=0; % start from the race start and end at the same location after one lap
 
 %%%% If you want to start and end somewhere else in the middle  %%%%%%%%%%%
-%%%% (for testing perpuse) uncommon and edit the following %%%%%%%%%%%%%%%%
-% start_index=11; % 1 to 597
-% end_index=21; % 1 to 597
+% %%%% (for testing perpuse) uncommon and edit the following %%%%%%%%%%%%%%%%
+% start_index=362; % 1 to 597
+% end_index=597; % 1 to 597
 % % start at a certain location 
 % s_start=Track.arc_s(start_index);
 % Track.bstl=Track.bl(:,start_index);
@@ -48,6 +48,7 @@ Track.arc_s;
 %%%%%%%%% initial condition %%%%%%%%%%%%%%%
 XX0=Track.center(s_start);
 v0=sqrt(Car.R_max/Car.k); % initial longitudinal speed top speed
+%v0=40;
 x0=[XX0(1:2);Track.ftheta(s_start);v0];
 
 
@@ -55,25 +56,27 @@ x0=[XX0(1:2);Track.ftheta(s_start);v0];
 %% Open loop control
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Driving force
-Rcontrol=@(t) interp1(OpenLoopAll(1,:),OpenLoopAll(2,:),t);
-
-% steering angle
-gamma=@(t) interp1(OpenLoopAll(1,:),OpenLoopAll(3,:),t);
-% % % For gammadot 
+% % Driving force
+ Rcontrol=@(t) interp1(OpenLoopAll(1,:),OpenLoopAll(2,:),t);
+%Rcontrol=@(t)RBrute(t);
+% 
+% % steering angle
+ gamma=@(t) interp1(OpenLoopAll(1,:),OpenLoopAll(3,:),t);
+ %gamma=@(t)GBrute(t);
+% % % % For gammadot 
 % % % you can either either provide a numerical expression
 gammadot=@(t) interp1(OpenLoopAll(1,:),OpenLoopAll(4,:),t);
-% % % or rely on numerical estimation
-% dt=1e-6;
-% diff_num=@(f,dt,t) (f(t+dt)-f(t-dt))/(2*dt);
-% gammadot=@(t) diff_num(gamma,dt,t); 
+% %%%or rely on numerical estimation
+%  dt=1e-6;
+%  diff_num=@(f,dt,t) (f(t+dt)-f(t-dt))/(2*dt);
+%  gammadot=@(t) diff_num(gamma,dt,t); 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%% make sure you set a time long enough %%%%%%%%%%%%%%%%%%%
 
 Time=200;
 sim_step=0.05;
-t_plot=0:sim_step:10;
+t_plot=0:sim_step:200;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
