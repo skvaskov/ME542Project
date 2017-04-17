@@ -15,15 +15,15 @@ load('F1CarData.mat')
 Car=CarParameter;
 %% Track Information
 load('CircuitOfAmerica.mat');
-load('openloopcontrolbuff.mat');
+% load('openloopcontrolbuff.mat');
 %% Start point set
-s_start=0; % start from the race start and end at the same location after one lap
+  % start from the race start and end at the same location after one lap
 
 %%%% If you want to start and end somewhere else in the middle  %%%%%%%%%%%
 % %%%% (for testing perpuse) uncommon and edit the following %%%%%%%%%%%%%%%%
-% start_index=362; % 1 to 597
-% end_index=597; % 1 to 597
-% % start at a certain location 
+%  start_index=362; % 1 to 597
+%  end_index=597; % 1 to 597
+% % % start at a certain location 
 % s_start=Track.arc_s(start_index);
 % Track.bstl=Track.bl(:,start_index);
 % Track.bstr=Track.br(:,start_index);
@@ -44,39 +44,46 @@ plot3([Track.bl(1,i) Track.br(1,i)],[Track.bl(2,i) Track.br(2,i)],[Track.bl(3,i)
 end
 
 Track.arc_s;
-
+   load('combinedtracj.mat')
 %%%%%%%%% initial condition %%%%%%%%%%%%%%%
+s_start=0;
 XX0=Track.center(s_start);
-v0=sqrt(Car.R_max/Car.k); % initial longitudinal speed top speed
-%v0=40;
-x0=[XX0(1:2);Track.ftheta(s_start);v0];
-
+% v0=sqrt(Car.R_max/Car.k); % initial longitudinal speed top speed
+t0=0;
+v0=50;
+ x0=[XX0(1:2);Track.ftheta(s_start);v0];
+%   t0=0;
+%   x0=ycomb(end,:);
+%   s_start=ucomb(end,4);
 
 %% Present your control design here
 %% Open loop control
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+load('controllall.mat')
 
 % % Driving force
- Rcontrol=@(t) interp1(OpenLoopAll(1,:),OpenLoopAll(2,:),t);
-%Rcontrol=@(t)RBrute(t);
+  Rcontrol=@(t) interp1(tc,Rc,t);
+%   Rcontrol=@(t) RBrute5(t);
+
 % 
 % % steering angle
- gamma=@(t) interp1(OpenLoopAll(1,:),OpenLoopAll(3,:),t);
- %gamma=@(t)GBrute(t);
+ gamma=@(t) interp1(tc,gamc,t);
+%   gamma=@(t) GBrute5(t);
+
 % % % % For gammadot 
 % % % you can either either provide a numerical expression
-gammadot=@(t) interp1(OpenLoopAll(1,:),OpenLoopAll(4,:),t);
+%gammadot=@(t) interp1(OpenLoopAll(1,:),OpenLoopAll(4,:),t);
 % %%%or rely on numerical estimation
-%  dt=1e-6;
-%  diff_num=@(f,dt,t) (f(t+dt)-f(t-dt))/(2*dt);
-%  gammadot=@(t) diff_num(gamma,dt,t); 
+ dt=1e-6;
+ diff_num=@(f,dt,t) (f(t+dt)-f(t-dt))/(2*dt);
+ gammadot=@(t) diff_num(gamma,dt,t); 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%% make sure you set a time long enough %%%%%%%%%%%%%%%%%%%
-
-Time=200;
+% t0=combinedtraj(1600,1);
+Time=170;
 sim_step=0.05;
-t_plot=0:sim_step:200;
+t_plot=t0:sim_step:Time;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -84,7 +91,7 @@ t_plot=0:sim_step:200;
 %% Check for the input constraints
 [Rcontrol_real,gamma_real,gammadot_real]=InputChecker(Rcontrol,gamma,gammadot,Car,Time,sim_step);
 %%
-usize=9;
+usize=10;
 %%%  By default, the car RWD will give out dX and 9 values for monitoring purpose
 %%% They are [R;tgamma;dtgamma;s0;sf;sr;n0;nf;nr]; at time t
 % R driving force. tan(gamma), d(tan(gamma))/dt,
@@ -103,7 +110,7 @@ sys2=@(t,x,para) car_dynamics(t,x(1),x(2),x(3),x(4),para);
 %% Run
 Animation=1; % Animation on
 % Animation=0; % Animation off
-[t2,y2,u2]=CarSimRealTime(sys2,[0 Time],x0,s_start,sim_step,usize,Track,Car,Animation); 
+[t2,y2,u2]=CarSimRealTime(sys2,[t0 Time],x0,s_start,sim_step,usize,Track,Car,Animation); 
 
 %% Lateral Forces
 [Ffl_ana,Frl_ana]=Force_rwd(y2(:,4),u2(:,1),u2(:,2),u2(:,3),Car.m,Car.m0,Car.b,Car.w);   

@@ -38,5 +38,5 @@ dpsi=sigma*tgamma/Car.w;
 dtgamma=1/(cos(gamma))^2*gammadot;
 dv=(R-Car.k*sigma^2-Car.m0*tgamma*dtgamma*sigma)/(Car.m+Car.m0*tgamma^2);
 dX=[dx;dy;dpsi;dv];
-u=[R;tgamma;dtgamma;s0;sf;sr;n0;nf;nr];
+u=[R;tgamma;dtgamma;s0;sf;sr;n0;nf;nr;gamma];
 end

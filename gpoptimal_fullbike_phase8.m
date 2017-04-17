@@ -7,6 +7,11 @@
 close all
 clear all
 clc
+%get initial condition
+load('mattraj.mat')
+x0=[y2(end,:) u2(end,10)];
+t0=t2(end);
+clearvars -except x0 t0
 load('F1CarData.mat')
 load('CircuitOfAmerica.mat')
 
@@ -14,8 +19,7 @@ load('CircuitOfAmerica.mat')
 start=292;
 fin=362;
 %very conservative guess for final time
-t0=0;
-T=(Track.arc_s(fin)-Track.arc_s(start))/10+60;
+T=(Track.arc_s(fin)-Track.arc_s(start))/10+t0;
 t=linspace(t0,T,1000);
 dt=t(2)-t(1);
 xc0=[Track.cline(1:2,start);Track.theta(start)-2*pi]; %initial centerline point
@@ -39,14 +43,14 @@ bounds.phase(iphase).initialstate.upper = [xc0' 30 0];
  bounds.phase(iphase).finalstate.lower =  [-400 -300 -pi 0 -.5];
  bounds.phase(iphase).finalstate.upper = [1600 1000 pi 150 .5]; 
 
-bounds.phase(iphase).control.lower = [-10000 -.025];
-bounds.phase(iphase).control.upper = [5500 .025];
+bounds.phase(iphase).control.lower = [-10000 -.5];
+bounds.phase(iphase).control.upper = [5500 .5];
 %cost
   bounds.phase(iphase).integral.lower=0;
   bounds.phase(iphase).integral.upper=10000;
 %path constraints
-bounds.phase(iphase).path.lower=[0 -100 -2500 -2500];
-bounds.phase(iphase).path.upper=[100 0 2500 2500];
+bounds.phase(iphase).path.lower=[2 -100 -2500 -2500];
+bounds.phase(iphase).path.upper=[100 2 2500 2500];
 %terminate trajectory at cross of "finish line"
 bounds.eventgroup(iphase).lower=-1e6;
 bounds.eventgroup(iphase).upper=0;
@@ -55,17 +59,17 @@ bounds.eventgroup(iphase).upper=0;
 %                          Initial Guess                                  %
 %-------------------------------------------------------------------------%
 guess.phase(iphase).time     = [ t0; T ];
-guess.phase(iphase).state    = [ xc0' sqrt(5500/param(5)) 0; xcF' 0 0];
+guess.phase(iphase).state    = [ x0; xcF' 40 0];
 
 
-guess.phase(iphase).control  = [5000,0;0,0 ];
+guess.phase(iphase).control  = [-10000,0;-10000,0 ];
 guess.phase(iphase).integral = 0;
 
 %-------------------------------------------------------------------------%
 %----------Provide Mesh Refinement Method and Initial Mesh ---------------%
 %-------------------------------------------------------------------------%
 mesh.method          = 'hp-LiuRao-Legendre';
-mesh.tolerance       = 1e-6;
+mesh.tolerance       = 1e-3;
 mesh.phase(1).colpoints = 4 * ones(1,10);
 mesh.phase(1).fraction = 0.1 * ones(1,10);
 
@@ -158,7 +162,8 @@ end
 phaseout.dynamics=dx;
 right=x1(:,2)-0.0001247564164*x1(:,1).^2+0.0221132121353*x1(:,1)-612.8982167785507;
 left=x1(:,2) -0.0001144350496*x1(:,1).^2+0.0021560732820*x1(:,1)-589.3732440353729;
-phaseout.integrand=sqrt((x1(:,1)-ones(size(x1(:,1)))*xcF(1)).^2+(x1(:,2)-ones(size(x1(:,2)))*xcF(2)).^2);
+phaseout.integrand=sqrt((x1(:,1)-ones(size(x1(:,1)))*xcF(1)).^2+(x1(:,2)-ones(size(x1(:,2)))*xcF(2)).^2+...
+    (x1(:,3)-ones(size(x1(:,3)))*xcF(3)).^2+(x1(:,3)-ones(size(x1(:,3)))*40).^2);
 phaseout.path=[left right Ftire];
 end
 
@@ -174,5 +179,5 @@ output.eventgroup(1).event=Xf(2)-xbr(2)-(xbl(2)-xbr(2))/(xbl(1)-xbr(1))*(Xf(1)-x
 % objective is to minimize final time
 %compute total distance away from endpoint
 
-output.objective=input.phase(1).integral+1000*(T+(Xf(4)-40)^2+10*(Xf(3)-xcF(3))^2);
+output.objective=input.phase(1).integral+T;
 end
