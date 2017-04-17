@@ -112,21 +112,3 @@ gpops_states=output.result.solution.phase.state;
 % u_ol = spline(gpops_t, u_ol');
 % u_ol = ppval(u_ol, t(:));
 
-figure
-subplot(3,1,1)
-plot(gpops_states(:,1),gpops_states(:,2))
-hold on
-plot(xc0(1),xc0(2),'k*')
-plot(xcF(1),xcF(2),'k*')
-plot(Track.bl(1,start:fin),Track.bl(2,start:fin),'r')
-plot(Track.br(1,start:fin),Track.br(2,start:fin),'r')
-xlabel('X')
-ylabel('Y')
-subplot(3,1,2)
-plot(gpops_t,u_ol(:,1))
-xlabel('time')
-ylabel('R')
-subplot(3,1,3)
-plot(gpops_t,u_ol(:,2))
-xlabel('time')
-ylabel('\gamma`')
