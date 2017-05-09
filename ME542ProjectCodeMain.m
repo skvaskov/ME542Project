@@ -108,7 +108,7 @@ car_dynamics=@(t,x,y,psi,sigma,s) car_RWD(t,x,y,psi,sigma,gamma_real(t),gammadot
 sys2=@(t,x,para) car_dynamics(t,x(1),x(2),x(3),x(4),para);
 
 %% Run
-Animation=1; % Animation on
+Animation=0; % Animation on
 % Animation=0; % Animation off
 [t2,y2,u2]=CarSimRealTime(sys2,[t0 Time],x0,s_start,sim_step,usize,Track,Car,Animation); 
 
